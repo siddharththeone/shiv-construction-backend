@@ -1,0 +1,14 @@
+{
+  "name": "shiv-construction-backend",
+  "version": "1.0.0",
+  "description": "SHIV Construction Management Backend",
+  "main": "server/src/index.ts",
+  "scripts": {
+    "start": "cd server && npm start",
+    "build": "cd server && npm run build",
+    "install-deps": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
