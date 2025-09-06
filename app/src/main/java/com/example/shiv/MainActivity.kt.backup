@@ -1,0 +1,1243 @@
+package com.example.shiv
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.launch
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            SHIVTheme {
+                val navController = rememberNavController()
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    AppNavHost(
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SHIVTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colors = if (darkTheme) {
+        darkColorScheme(
+            primary = Color(0xFFBB86FC),
+            secondary = Color(0xFF03DAC5),
+            tertiary = Color(0xFF018786)
+        )
+    } else {
+        lightColorScheme(
+            primary = Color(0xFF6200EE),
+            secondary = Color(0xFF03DAC5),
+            tertiary = Color(0xFF018786)
+        )
+    }
+    MaterialTheme(
+        colorScheme = colors,
+        typography = Typography(
+            titleLarge = TextStyle(
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            ),
+            bodyMedium = TextStyle(
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp
+            )
+        ),
+        content = content
+    )
+}
+
+@Composable
+fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+    NavHost(
+        navController = navController,
+        startDestination = "role_select",
+        modifier = modifier
+    ) {
+        composable("role_select") {
+            RoleSelectScreen(
+                onOwner = { navController.navigate("dashboard/owner") },
+                onContractor = { navController.navigate("dashboard/contractor") },
+                onSupplier = { navController.navigate("dashboard/supplier") }
+            )
+        }
+        composable("dashboard/owner") {
+            OwnerDashboard(
+                onBack = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate("role_select") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onSiteClick = { siteId -> navController.navigate("site_detail/$siteId") }
+            )
+        }
+        composable("dashboard/contractor") {
+            ContractorDashboard(
+                onBack = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate("role_select") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onSiteClick = { siteId -> navController.navigate("site_detail/$siteId") }
+            )
+        }
+        composable("dashboard/supplier") {
+            SupplierDashboard(
+                onBack = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate("role_select") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
+        composable("site_detail/{siteId}") { backStackEntry ->
+            val siteId = backStackEntry.arguments?.getString("siteId") ?: ""
+            SiteDetailScreen(
+                siteId = siteId,
+                onBack = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate("role_select") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun RoleSelectScreen(onOwner: () -> Unit, onContractor: () -> Unit, onSupplier: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Build,
+            contentDescription = "Construction Manager",
+            modifier = Modifier.size(120.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Construction Manager",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Select your role to continue",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(48.dp))
+        AppButton(
+            text = "Owner (Admin)",
+            icon = Icons.Default.AccountCircle,
+            onClick = onOwner,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        AppButton(
+            text = "Contractor",
+            icon = Icons.Default.Build,
+            onClick = onContractor,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        AppButton(
+            text = "Supplier",
+            icon = Icons.Default.LocalShipping,
+            onClick = onSupplier,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+    }
+}
+
+@Composable
+fun OwnerDashboard(onBack: () -> Unit, onSiteClick: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Add Site feature coming soon!"
+                        )
+                    }
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Site")
+            }
+        }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        text = "Owner Dashboard",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SummaryCard(
+                        title = "Total Sites",
+                        value = "3",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    SummaryCard(
+                        title = "In Progress",
+                        value = "1",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    SummaryCard(
+                        title = "Completed",
+                        value = "1",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Your Sites",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            items(MockData.sites) { site ->
+                SiteCard(site = site, onClick = { onSiteClick(site.id) })
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun ContractorDashboard(onBack: () -> Unit, onSiteClick: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        text = "Contractor Dashboard",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SummaryCard(
+                        title = "Assigned Sites",
+                        value = "2",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    SummaryCard(
+                        title = "In Progress",
+                        value = "1",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    SummaryCard(
+                        title = "Pending",
+                        value = "1",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Assigned Sites",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            items(MockData.contractorSites) { site ->
+                SiteCard(site = site, onClick = { onSiteClick(site.id) })
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Quick Actions",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ActionButton(
+                        text = "Upload Photos",
+                        icon = Icons.Default.PhotoCamera,
+                        color = MaterialTheme.colorScheme.primary,
+                        onClick = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "Upload Photos feature coming soon!"
+                                )
+                            }
+                        }
+                    )
+                    ActionButton(
+                        text = "Request Materials",
+                        icon = Icons.Default.Inventory,
+                        color = MaterialTheme.colorScheme.secondary,
+                        onClick = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "Request Materials feature coming soon!"
+                                )
+                            }
+                        }
+                    )
+                    ActionButton(
+                        text = "View Payments",
+                        icon = Icons.Default.Payment,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        onClick = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "View Payments feature coming soon!"
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SupplierDashboard(onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        text = "Supplier Dashboard",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SummaryCard(
+                        title = "Total Orders",
+                        value = "15",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    SummaryCard(
+                        title = "Pending",
+                        value = "3",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    SummaryCard(
+                        title = "Delivered",
+                        value = "12",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Recent Orders",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
+            items(listOf(
+                "Cement - 500 bags - Site A",
+                "Steel - 10 tons - Site B", 
+                "Bricks - 2000 pieces - Site C"
+            )) { order ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = order,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Status: In Transit",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                        Icon(
+                            Icons.Default.LocalShipping,
+                            contentDescription = "In Transit",
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun SiteDetailScreen(siteId: String, onBack: () -> Unit) {
+    if (siteId.isEmpty()) {
+        Text(
+            text = "Invalid Site ID",
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            textAlign = TextAlign.Center
+        )
+        return
+    }
+    val site = MockData.sites.find { it.id == siteId } ?: MockData.sites[0]
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                Text(
+                    text = site.name,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = site.location,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Progress: ${site.progress}% Complete")
+                    LinearProgressIndicator(
+                        progress = site.progress / 100f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Status: ${site.status}")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Contractor: ${site.contractor}")
+                    Text("Supplier: ${site.supplier}")
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Materials",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        items(MockData.materials) { material ->
+            MaterialDetailCard(material = material)
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Payments",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        items(MockData.payments) { payment ->
+            PaymentDetailCard(payment = payment)
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+// Additional Composable Functions (ensure they are defined)
+@Composable
+fun SiteOverviewTab(site: SiteItem?) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Project Progress",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = (site?.progress ?: 0) / 100f,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${site?.progress ?: 0}% Complete",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        item {
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Key Metrics",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "Budget Used",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "₹2.4M / ₹3.0M",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Days Remaining",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "45 days",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Recent Activities",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    listOf(
+                        "Concrete pouring completed - 2 hours ago",
+                        "Steel delivery received - 1 day ago",
+                        "Foundation inspection passed - 2 days ago",
+                        "Site survey completed - 1 week ago"
+                    ).forEach { activity ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = activity,
+                                fontSize = 14.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MaterialsTab(siteId: String) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Material Requests",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Button(
+                    onClick = { /* TODO: Add new material request */ },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Request")
+                }
+            }
+        }
+        items(MockData.materials) { material ->
+            MaterialDetailCard(material = material)
+        }
+    }
+}
+
+@Composable
+fun PaymentsTab(siteId: String) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Payment History",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Button(
+                    onClick = { /* TODO: Add new payment */ },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Payment")
+                }
+            }
+        }
+        items(MockData.payments) { payment ->
+            PaymentDetailCard(payment = payment)
+        }
+    }
+}
+
+@Composable
+fun PhotosTab(siteId: String) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Site Photos",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Button(
+                    onClick = { /* TODO: Add new photo */ },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Photo")
+                }
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Foundation Work",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Uploaded 2 days ago",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.medium
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoCamera,
+                            contentDescription = "Site Photo",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            )
+        }
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Steel Structure",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Uploaded 1 week ago",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.medium
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoCamera,
+                            contentDescription = "Site Photo",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun SiteCard(site: SiteItem, onClick: () -> Unit = {}) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = site.name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = site.location,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${site.progress}% Complete",
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = site.status,
+                    fontSize = 12.sp,
+                    color = when (site.status) {
+                        "Completed" -> MaterialTheme.colorScheme.primary
+                        "In Progress" -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.tertiary
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = site.progress / 100f,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun MaterialRequestCard(request: MaterialRequest, onUpdate: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "${request.site} - ${request.material}",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = request.quantity,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = when (request.status) {
+                            "Delivered" -> Icons.Default.CheckCircle
+                            "Pending" -> Icons.Default.Schedule
+                            else -> Icons.Default.Warning
+                        },
+                        contentDescription = request.status,
+                        tint = when (request.status) {
+                            "Delivered" -> MaterialTheme.colorScheme.primary
+                            "Pending" -> MaterialTheme.colorScheme.secondary
+                            else -> MaterialTheme.colorScheme.tertiary
+                        },
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = request.status,
+                        fontSize = 14.sp,
+                        color = when (request.status) {
+                            "Delivered" -> MaterialTheme.colorScheme.primary
+                            "Pending" -> MaterialTheme.colorScheme.secondary
+                            else -> MaterialTheme.colorScheme.tertiary
+                        }
+                    )
+                }
+                AppButton(
+                    text = "Update",
+                    onClick = onUpdate,
+                    modifier = Modifier.height(32.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RowScope.SummaryCard(title: String, value: String, color: Color) {
+    Card(
+        modifier = Modifier.weight(1f),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun RowScope.ActionButton(text: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = color)
+    ) {
+        Icon(icon, contentDescription = text, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(text, fontSize = 12.sp)
+    }
+}
+
+@Composable
+fun MaterialDetailCard(material: MaterialItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = material.name, fontWeight = FontWeight.Medium)
+                Text(
+                    text = material.quantity,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = material.status,
+                    fontSize = 12.sp,
+                    color = when (material.status) {
+                        "Delivered" -> MaterialTheme.colorScheme.primary
+                        "Pending" -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.tertiary
+                    }
+                )
+                Text(
+                    text = material.date,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PaymentDetailCard(payment: PaymentItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = payment.recipient, fontWeight = FontWeight.Medium)
+                Text(
+                    text = payment.amount,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = payment.status,
+                    fontSize = 12.sp,
+                    color = when (payment.status) {
+                        "Paid" -> MaterialTheme.colorScheme.primary
+                        "Pending" -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.tertiary
+                    }
+                )
+                Text(
+                    text = payment.date,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AppButton(
+    text: String,
+    icon: ImageVector? = null,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = color)
+    ) {
+        if (icon != null) {
+            Icon(icon, contentDescription = text)
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(text)
+    }
+}
+
+@Immutable
+data class SiteItem(
+    val id: String,
+    val name: String,
+    val location: String,
+    val progress: Int,
+    val status: String,
+    val contractor: String,
+    val supplier: String
+)
+
+@Immutable
+data class MaterialRequest(
+    val id: String,
+    val site: String,
+    val material: String,
+    val status: String,
+    val quantity: String,
+    val date: String
+)
+
+@Immutable
+data class MaterialItem(
+    val name: String,
+    val quantity: String,
+    val status: String,
+    val date: String
+)
+
+@Immutable
+data class PaymentItem(
+    val recipient: String,
+    val amount: String,
+    val status: String,
+    val date: String
+)
+
+object MockData {
+    val sites = listOf(
+        SiteItem("1", "Site A", "Downtown Project", 35, "In Progress", "John Contractor", "ABC Supplies"),
+        SiteItem("2", "Site B", "Residential Complex", 0, "Not Started", "Mike Builder", "XYZ Materials"),
+        SiteItem("3", "Site C", "Office Building", 100, "Completed", "Sarah Construct", "DEF Supply Co")
+    )
+
+    val contractorSites = sites.take(2)
+
+    val materialRequests = listOf(
+        MaterialRequest("1", "Site A", "Cement", "Pending", "500 bags", "2024-01-15"),
+        MaterialRequest("2", "Site B", "Steel", "Delivered", "2 tons", "2024-01-10"),
+        MaterialRequest("3", "Site C", "Bricks", "Partial", "1000 pieces", "2024-01-12"),
+        MaterialRequest("4", "Site A", "Sand", "Pending", "10 tons", "2024-01-20")
+    )
+
+    val materials = listOf(
+        MaterialItem("Cement", "500 bags", "Delivered", "2024-01-15"),
+        MaterialItem("Steel", "2 tons", "Pending", "2024-01-20"),
+        MaterialItem("Bricks", "1000 pieces", "Partial", "2024-01-18")
+    )
+
+    val payments = listOf(
+        PaymentItem("John Contractor", "$50,000", "Paid", "2024-01-10"),
+        PaymentItem("ABC Supplies", "$25,000", "Pending", "2024-01-25")
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RoleSelectPreview() {
+    SHIVTheme {
+        RoleSelectScreen(onOwner = {}, onContractor = {}, onSupplier = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun OwnerDashboardPreview() {
+    SHIVTheme {
+        OwnerDashboard(onBack = {}, onSiteClick = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ContractorDashboardPreview() {
+    SHIVTheme {
+        ContractorDashboard(onBack = {}, onSiteClick = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SupplierDashboardPreview() {
+    SHIVTheme {
+        SupplierDashboard(onBack = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SiteDetailScreenPreview() {
+    SHIVTheme {
+        SiteDetailScreen(siteId = "1", onBack = {})
+    }
+}
