@@ -124,9 +124,9 @@ authRouter.post('/register-fcm', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-function signToken(userId: string, role: UserRole): string {
+function signToken(userId: any, role: UserRole): string {
   const secret = process.env.JWT_SECRET || 'dev_secret';
-  return jwt.sign({ userId, role }, secret, { expiresIn: '7d' });
+  return jwt.sign({ userId: userId.toString(), role }, secret, { expiresIn: '7d' });
 }
 
 function serializeUser(user: any) {
