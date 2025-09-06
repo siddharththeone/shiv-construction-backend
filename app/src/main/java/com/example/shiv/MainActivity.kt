@@ -2793,7 +2793,7 @@ interface ApiClient {
 
 // API Client Implementation
 class ApiClientImpl(private val tokenProvider: () -> String?) : ApiClient {
-    private val baseUrl = "http://YOUR_PUBLIC_IP:4000/api" // Replace with your public IP
+    private val baseUrl = "https://shiv-construction-backend.onrender.com/api" // Live Render backend
     private val client = OkHttpClient()
     
     override suspend fun login(request: LoginRequest): Result<LoginResponse> {
