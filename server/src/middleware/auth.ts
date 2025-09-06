@@ -23,7 +23,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = header.split(' ')[1];
   try {
     const secret = process.env.JWT_SECRET || 'dev_secret';
-    const payload = jwt.verify(token, secret) as AuthUser & { iat: number; exp: number };
+    const payload = jwt.verify(token, secret) as any;
     req.auth = { userId: payload.userId, role: payload.role };
     next();
   } catch (e) {
