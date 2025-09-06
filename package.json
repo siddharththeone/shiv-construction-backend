@@ -1,14 +1,19 @@
 {
   "name": "shiv-construction-backend",
   "version": "1.0.0",
-  "description": "SHIV Construction Management Backend",
-  "main": "server/src/index.ts",
+  "description": "SHIV Construction Management Backend API",
+  "main": "server/dist/index.js",
   "scripts": {
     "start": "cd server && npm start",
     "build": "cd server && npm run build",
-    "install-deps": "cd server && npm install"
+    "install": "cd server && npm install",
+    "postinstall": "cd server && npm install"
   },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": ["nodejs", "express", "api", "construction", "management"],
+  "author": "Siddharth",
+  "license": "MIT"
 }

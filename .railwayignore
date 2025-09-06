@@ -1,0 +1,12 @@
+app/
+mobile/
+.gradle/
+.idea/
+build/
+gradle/
+*.gradle
+*.gradle.kts
+gradlew
+gradlew.bat
+local.properties
+settings.gradle.kts
