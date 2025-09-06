@@ -46,7 +46,7 @@ siteRouter.post('/', requireAuth, requireRole(['OWNER']), async (req, res) => {
       if (company) {
         // Update user with company reference
         await User.findByIdAndUpdate(user._id, { company: company._id });
-        user.company = company;
+        user.company = company._id;
       } else {
         return res.status(400).json({ error: 'User must belong to a company' });
       }
@@ -65,7 +65,7 @@ siteRouter.post('/', requireAuth, requireRole(['OWNER']), async (req, res) => {
       siteArea: siteArea ? parseFloat(siteArea) : undefined,
       buildingType,
       floors: floors ? parseInt(floors) : undefined,
-      company: user.company._id,
+      company: user.company!._id,
       owner,
       status: 'NOT_STARTED',
       progressPercent: 0

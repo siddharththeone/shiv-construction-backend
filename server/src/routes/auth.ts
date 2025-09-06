@@ -22,7 +22,7 @@ authRouter.post('/signup', async (req, res) => {
     if (!name || !role) return res.status(400).json({ error: 'Missing fields' });
     const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
     const user = await User.create({ name, email, phone, passwordHash, role });
-    const token = signToken(user._id, user.role);
+    const token = signToken(user._id.toString(), user.role);
     res.json({ success: true, token, user: serializeUser(user) });
   } catch (e: any) {
     res.status(400).json({ error: e.message });
@@ -72,7 +72,7 @@ authRouter.post('/signup-owner', async (req, res) => {
     // Update user with company reference
     await User.findByIdAndUpdate(user._id, { company: company._id });
     
-    const token = signToken(user._id, user.role);
+    const token = signToken(user._id.toString(), user.role);
     res.json({ 
       success: true, 
       token, 
