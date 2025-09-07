@@ -16,8 +16,11 @@
     },
     "android": {
       "package": "com.shiv.construction"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ece5f89c-87e5-4923-b734-46f2578ba369"
+      }
     }
   }
 }
-
-
