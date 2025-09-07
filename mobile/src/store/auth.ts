@@ -20,9 +20,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   initialize: async () => {
-    const token = await SecureStore.getItemAsync('token');
-    const userStr = await SecureStore.getItemAsync('user');
-    if (token && userStr) set({ token, user: JSON.parse(userStr) });
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      const userStr = await SecureStore.getItemAsync('user');
+      if (token && userStr) set({ token, user: JSON.parse(userStr) });
+    } catch (e) {
+      // Fallback for web - use localStorage
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      if (token && userStr) set({ token, user: JSON.parse(userStr) });
+    }
   },
   login: async ({ email, phone, password }) => {
     const res = await axios.post(`${API_BASE}/auth/login`, { email, phone, password });
@@ -42,8 +49,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token, user });
   },
   logout: async () => {
-    await SecureStore.deleteItemAsync('token');
-    await SecureStore.deleteItemAsync('user');
+    try {
+      await SecureStore.deleteItemAsync('token');
+      await SecureStore.deleteItemAsync('user');
+    } catch (e) {
+      // Fallback for web - use localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     set({ token: null, user: null });
   },
   registerFcm: async (token) => {

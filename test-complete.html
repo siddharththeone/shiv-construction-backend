@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Backend Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>SHIV Backend Complete Test</h1>
+    
+    <div class="test">
+        <h3>1. Health Check</h3>
+        <button onclick="testHealth()">Test Health</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test">
+        <h3>2. Test Signup (New User)</h3>
+        <input type="text" id="signup-name" placeholder="Name" value="Test User 2"><br><br>
+        <input type="email" id="signup-email" placeholder="Email" value="test2@example.com"><br><br>
+        <input type="password" id="signup-password" placeholder="Password" value="password123"><br><br>
+        <select id="signup-role">
+            <option value="CONTRACTOR">CONTRACTOR</option>
+            <option value="SUPPLIER">SUPPLIER</option>
+        </select><br><br>
+        <button onclick="testSignup()">Test Signup</button>
+        <div id="signup-result"></div>
+    </div>
+
+    <div class="test">
+        <h3>3. Test Login (Existing User)</h3>
+        <input type="email" id="login-email" placeholder="Email" value="test@example.com"><br><br>
+        <input type="password" id="login-password" placeholder="Password" value="password123"><br><br>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="test">
+        <h3>4. Test API Info</h3>
+        <button onclick="testApiInfo()">Get API Info</button>
+        <div id="api-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://shiv-construction-backend-production.up.railway.app';
+
+        async function testHealth() {
+            const result = document.getElementById('health-result');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                result.innerHTML = `<div class="success"><strong>SUCCESS:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="error"><strong>ERROR:</strong> ${error.message}</div>`;
+            }
+        }
+
+        async function testSignup() {
+            const result = document.getElementById('signup-result');
+            const data = {
+                name: document.getElementById('signup-name').value,
+                email: document.getElementById('signup-email').value,
+                password: document.getElementById('signup-password').value,
+                role: document.getElementById('signup-role').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const responseData = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<div class="success"><strong>SUCCESS:</strong><pre>${JSON.stringify(responseData, null, 2)}</pre></div>`;
+                } else {
+                    result.innerHTML = `<div class="error"><strong>ERROR:</strong><pre>${JSON.stringify(responseData, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error"><strong>NETWORK ERROR:</strong> ${error.message}</div>`;
+            }
+        }
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            const data = {
+                email: document.getElementById('login-email').value,
+                password: document.getElementById('login-password').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const responseData = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<div class="success"><strong>SUCCESS:</strong><pre>${JSON.stringify(responseData, null, 2)}</pre></div>`;
+                } else {
+                    result.innerHTML = `<div class="error"><strong>ERROR:</strong><pre>${JSON.stringify(responseData, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error"><strong>NETWORK ERROR:</strong> ${error.message}</div>`;
+            }
+        }
+
+        async function testApiInfo() {
+            const result = document.getElementById('api-result');
+            try {
+                const response = await fetch(`${API_BASE}/api`);
+                const data = await response.json();
+                result.innerHTML = `<div class="success"><strong>SUCCESS:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="error"><strong>ERROR:</strong> ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
