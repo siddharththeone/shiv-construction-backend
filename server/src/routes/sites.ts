@@ -2,15 +2,16 @@ import { Router } from 'express';
 import { Site } from '../models/Site.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 import { UserRole } from '../types/roles.js';
 
 const sitesRouter = Router();
 
 // Get all sites (for owner) or assigned sites (for contractor/supplier)
-sitesRouter.get('/', authenticateToken, async (req, res) => {
+sitesRouter.get('/', requireAuth, async (req, res) => {
   try {
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
     
     let sites;
     if (user.role === 'OWNER') {
@@ -42,10 +43,11 @@ sitesRouter.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single site details
-sitesRouter.get('/:id', authenticateToken, async (req, res) => {
+sitesRouter.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
 
     const site = await Site.findById(id)
       .populate('owner', 'name email phone')
@@ -73,9 +75,10 @@ sitesRouter.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create new site (only owner)
-sitesRouter.post('/', authenticateToken, async (req, res) => {
+sitesRouter.post('/', requireAuth, async (req, res) => {
   try {
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
 
     if (user.role !== 'OWNER') {
       return res.status(403).json({ error: 'Only owners can create sites' });
@@ -127,10 +130,11 @@ sitesRouter.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update site (owner can update everything, contractors can update progress)
-sitesRouter.put('/:id', authenticateToken, async (req, res) => {
+sitesRouter.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
 
     const site = await Site.findById(id);
     if (!site) {
@@ -179,11 +183,12 @@ sitesRouter.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Assign contractor to site (only owner)
-sitesRouter.post('/:id/assign-contractor', authenticateToken, async (req, res) => {
+sitesRouter.post('/:id/assign-contractor', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { contractorId } = req.body;
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
 
     if (user.role !== 'OWNER') {
       return res.status(403).json({ error: 'Only owners can assign contractors' });
@@ -220,11 +225,12 @@ sitesRouter.post('/:id/assign-contractor', authenticateToken, async (req, res) =
 });
 
 // Assign supplier to site (only owner)
-sitesRouter.post('/:id/assign-supplier', authenticateToken, async (req, res) => {
+sitesRouter.post('/:id/assign-supplier', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { supplierId } = req.body;
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
 
     if (user.role !== 'OWNER') {
       return res.status(403).json({ error: 'Only owners can assign suppliers' });
@@ -261,10 +267,11 @@ sitesRouter.post('/:id/assign-supplier', authenticateToken, async (req, res) => 
 });
 
 // Get available contractors and suppliers for assignment
-sitesRouter.get('/available/:role', authenticateToken, async (req, res) => {
+sitesRouter.get('/available/:role', requireAuth, async (req, res) => {
   try {
     const { role } = req.params;
-    const user = req.user;
+    const user = await User.findById(req.auth!.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
 
     if (user.role !== 'OWNER') {
       return res.status(403).json({ error: 'Only owners can view available users' });

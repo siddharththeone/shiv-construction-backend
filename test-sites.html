@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Site APIs</title>
+</head>
+<body>
+    <h1>Test Site Management APIs</h1>
+    
+    <div>
+        <h2>1. Test Get Sites (without auth - should fail)</h2>
+        <button onclick="testGetSites()">Test Get Sites</button>
+        <div id="getSitesResult"></div>
+    </div>
+
+    <div>
+        <h2>2. Test Create Site (without auth - should fail)</h2>
+        <button onclick="testCreateSite()">Test Create Site</button>
+        <div id="createSiteResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://shiv-construction-backend-production.up.railway.app/api';
+
+        async function testGetSites() {
+            try {
+                const response = await fetch(`${API_BASE}/sites`);
+                const data = await response.json();
+                document.getElementById('getSitesResult').innerHTML = 
+                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('getSitesResult').innerHTML = 
+                    `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testCreateSite() {
+            try {
+                const response = await fetch(`${API_BASE}/sites`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Test Site',
+                        description: 'Test site creation'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('createSiteResult').innerHTML = 
+                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('createSiteResult').innerHTML = 
+                    `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
