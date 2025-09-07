@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import path from 'path';
 
 import { authRouter } from './routes/auth.js';
-import { siteRouter } from './routes/sites.js';
+import { sitesRouter } from './routes/sites.js';
 import { companyRouter } from './routes/companies.js';
 import { materialsRouter } from './routes/materials.js';
 import { paymentsRouter } from './routes/payments.js';
@@ -52,7 +52,7 @@ app.get('/api', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/companies', companyRouter);
-app.use('/api/sites', siteRouter);
+app.use('/api/sites', sitesRouter);
 app.use('/api/materials', materialsRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/notifications', notificationsRouter);

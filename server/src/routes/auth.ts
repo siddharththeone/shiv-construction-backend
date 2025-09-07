@@ -45,9 +45,9 @@ authRouter.post('/signup-owner', async (req, res) => {
       companyWebsite?: string;
     };
 
-    if (!name || !companyName) return res.status(400).json({ error: 'Name and company name are required' });
+    if (!name || !companyName || !password) return res.status(400).json({ error: 'Name, company name, and password are required' });
     
-    const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
+    const passwordHash = await bcrypt.hash(password, 10);
     
     // Create user first
     const user = await User.create({ 

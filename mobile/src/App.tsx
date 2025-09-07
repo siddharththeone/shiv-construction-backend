@@ -2,8 +2,6 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View, Button } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { useAuthStore } from './store/auth';
 import { OwnerDashboard, ContractorDashboard, SupplierDashboard } from './screens/Dashboards';
 import { LoginScreen } from './screens/Login';
@@ -16,25 +14,6 @@ export default function App() {
   useEffect(() => {
     initialize();
   }, [initialize]);
-
-  useEffect(() => {
-    async function registerForPushNotificationsAsync() {
-      if (Device.isDevice) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-          return;
-        }
-        const token = (await Notifications.getExpoPushTokenAsync()).data;
-        useAuthStore.getState().registerFcm(token);
-      }
-    }
-    registerForPushNotificationsAsync();
-  }, []);
 
   return (
     <NavigationContainer>

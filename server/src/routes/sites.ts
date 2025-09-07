@@ -1,26 +1,94 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.js';
 import { Site } from '../models/Site.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
-import { Transaction } from '../models/Transaction.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { UserRole } from '../types/roles.js';
 
-export const siteRouter = Router();
+const sitesRouter = Router();
 
-// Create site (Owner only)
-siteRouter.post('/', requireAuth, requireRole(['OWNER']), async (req, res) => {
+// Get all sites (for owner) or assigned sites (for contractor/supplier)
+sitesRouter.get('/', authenticateToken, async (req, res) => {
   try {
-    const owner = req.auth!.userId;
-    const { 
-      name, 
-      location, 
+    const user = req.user;
+    
+    let sites;
+    if (user.role === 'OWNER') {
+      // Owner sees all sites from their company
+      sites = await Site.find({ company: user.company })
+        .populate('contractors', 'name email phone')
+        .populate('suppliers', 'name email phone')
+        .sort({ createdAt: -1 });
+    } else if (user.role === 'CONTRACTOR') {
+      // Contractor sees only assigned sites
+      sites = await Site.find({ contractors: user._id })
+        .populate('owner', 'name email phone')
+        .populate('suppliers', 'name email phone')
+        .sort({ createdAt: -1 });
+    } else if (user.role === 'SUPPLIER') {
+      // Supplier sees only assigned sites
+      sites = await Site.find({ suppliers: user._id })
+        .populate('owner', 'name email phone')
+        .populate('contractors', 'name email phone')
+        .sort({ createdAt: -1 });
+    } else {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({ success: true, sites });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single site details
+sitesRouter.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    const site = await Site.findById(id)
+      .populate('owner', 'name email phone')
+      .populate('contractors', 'name email phone')
+      .populate('suppliers', 'name email phone')
+      .populate('company', 'name description');
+
+    if (!site) {
+      return res.status(404).json({ error: 'Site not found' });
+    }
+
+    // Check if user has access to this site
+    const hasAccess = user.role === 'OWNER' && site.company.toString() === user.company?.toString() ||
+                     user.role === 'CONTRACTOR' && site.contractors.some(c => c._id.toString() === user._id.toString()) ||
+                     user.role === 'SUPPLIER' && site.suppliers.some(s => s._id.toString() === user._id.toString());
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({ success: true, site });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create new site (only owner)
+sitesRouter.post('/', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (user.role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only owners can create sites' });
+    }
+
+    const {
+      name,
+      location,
       address,
-      startDate, 
+      startDate,
       expectedEndDate,
       description,
       budget,
-      latitude,
-      longitude,
       siteArea,
       buildingType,
       floors
@@ -30,115 +98,191 @@ siteRouter.post('/', requireAuth, requireRole(['OWNER']), async (req, res) => {
       return res.status(400).json({ error: 'Site name is required' });
     }
 
-    // Get user's company
-    const user = await User.findById(owner).populate('company');
-    console.log('User found:', user ? 'Yes' : 'No');
-    console.log('User company:', user?.company ? 'Yes' : 'No');
-    console.log('User ID:', owner);
-    
-    if (!user) {
-      return res.status(400).json({ error: 'User not found' });
-    }
-    
-    if (!user.company) {
-      // Try to find company by owner
-      const company = await Company.findOne({ owner: user._id });
-      if (company) {
-        // Update user with company reference
-        await User.findByIdAndUpdate(user._id, { company: company._id });
-        user.company = company._id as any;
-      } else {
-        return res.status(400).json({ error: 'User must belong to a company' });
-      }
-    }
-
-    const site = await Site.create({ 
-      name, 
-      location, 
+    const site = await Site.create({
+      name,
+      location,
       address,
       startDate: startDate ? new Date(startDate) : undefined,
       expectedEndDate: expectedEndDate ? new Date(expectedEndDate) : undefined,
       description,
-      budget: budget ? parseFloat(budget) : undefined,
-      latitude: latitude ? parseFloat(latitude) : undefined,
-      longitude: longitude ? parseFloat(longitude) : undefined,
-      siteArea: siteArea ? parseFloat(siteArea) : undefined,
+      budget,
+      siteArea,
       buildingType,
-      floors: floors ? parseInt(floors) : undefined,
-      company: user.company as any,
-      owner,
+      floors,
+      company: user.company,
+      owner: user._id,
       status: 'NOT_STARTED',
       progressPercent: 0
     });
 
-    res.status(201).json({ success: true, site });
+    const populatedSite = await Site.findById(site._id)
+      .populate('owner', 'name email phone')
+      .populate('contractors', 'name email phone')
+      .populate('suppliers', 'name email phone');
+
+    res.status(201).json({ success: true, site: populatedSite });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 });
 
-// List sites (role-based)
-siteRouter.get('/', requireAuth, async (req, res) => {
+// Update site (owner can update everything, contractors can update progress)
+sitesRouter.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { role, userId } = req.auth!;
-    
-    // Get user's company
-    const user = await User.findById(userId).populate('company');
-    if (!user || !user.company) {
-      return res.status(400).json({ error: 'User must belong to a company' });
+    const { id } = req.params;
+    const user = req.user;
+
+    const site = await Site.findById(id);
+    if (!site) {
+      return res.status(404).json({ error: 'Site not found' });
     }
-    
-    let filter: any = { company: (user.company as any)._id };
-    if (role === 'OWNER') filter.owner = userId;
-    if (role === 'CONTRACTOR') filter.contractors = userId;
-    if (role === 'SUPPLIER') filter.suppliers = userId;
-    
-    const sites = await Site.find(filter).sort({ createdAt: -1 });
-    res.json(sites);
+
+    // Check access
+    const isOwner = user.role === 'OWNER' && site.company.toString() === user.company?.toString();
+    const isContractor = user.role === 'CONTRACTOR' && site.contractors.some(c => c._id.toString() === user._id.toString());
+
+    if (!isOwner && !isContractor) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Contractors can only update progress and status
+    if (isContractor) {
+      const { status, progressPercent } = req.body;
+      const updateData: any = {};
+      
+      if (status !== undefined) updateData.status = status;
+      if (progressPercent !== undefined) updateData.progressPercent = progressPercent;
+
+      const updatedSite = await Site.findByIdAndUpdate(id, updateData, { new: true })
+        .populate('owner', 'name email phone')
+        .populate('contractors', 'name email phone')
+        .populate('suppliers', 'name email phone');
+
+      return res.json({ success: true, site: updatedSite });
+    }
+
+    // Owner can update everything
+    const updateData = { ...req.body };
+    if (updateData.startDate) updateData.startDate = new Date(updateData.startDate);
+    if (updateData.expectedEndDate) updateData.expectedEndDate = new Date(updateData.expectedEndDate);
+    if (updateData.actualEndDate) updateData.actualEndDate = new Date(updateData.actualEndDate);
+
+    const updatedSite = await Site.findByIdAndUpdate(id, updateData, { new: true })
+      .populate('owner', 'name email phone')
+      .populate('contractors', 'name email phone')
+      .populate('suppliers', 'name email phone');
+
+    res.json({ success: true, site: updatedSite });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Assign contractor to site (only owner)
+sitesRouter.post('/:id/assign-contractor', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { contractorId } = req.body;
+    const user = req.user;
+
+    if (user.role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only owners can assign contractors' });
+    }
+
+    const site = await Site.findById(id);
+    if (!site) {
+      return res.status(404).json({ error: 'Site not found' });
+    }
+
+    if (site.company.toString() !== user.company?.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const contractor = await User.findById(contractorId);
+    if (!contractor || contractor.role !== 'CONTRACTOR') {
+      return res.status(400).json({ error: 'Invalid contractor' });
+    }
+
+    if (!site.contractors.includes(contractorId)) {
+      site.contractors.push(contractorId);
+      await site.save();
+    }
+
+    const updatedSite = await Site.findById(id)
+      .populate('owner', 'name email phone')
+      .populate('contractors', 'name email phone')
+      .populate('suppliers', 'name email phone');
+
+    res.json({ success: true, site: updatedSite });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Assign supplier to site (only owner)
+sitesRouter.post('/:id/assign-supplier', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { supplierId } = req.body;
+    const user = req.user;
+
+    if (user.role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only owners can assign suppliers' });
+    }
+
+    const site = await Site.findById(id);
+    if (!site) {
+      return res.status(404).json({ error: 'Site not found' });
+    }
+
+    if (site.company.toString() !== user.company?.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const supplier = await User.findById(supplierId);
+    if (!supplier || supplier.role !== 'SUPPLIER') {
+      return res.status(400).json({ error: 'Invalid supplier' });
+    }
+
+    if (!site.suppliers.includes(supplierId)) {
+      site.suppliers.push(supplierId);
+      await site.save();
+    }
+
+    const updatedSite = await Site.findById(id)
+      .populate('owner', 'name email phone')
+      .populate('contractors', 'name email phone')
+      .populate('suppliers', 'name email phone');
+
+    res.json({ success: true, site: updatedSite });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get available contractors and suppliers for assignment
+sitesRouter.get('/available/:role', authenticateToken, async (req, res) => {
+  try {
+    const { role } = req.params;
+    const user = req.user;
+
+    if (user.role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only owners can view available users' });
+    }
+
+    if (role !== 'CONTRACTOR' && role !== 'SUPPLIER') {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    const users = await User.find({ 
+      role: role.toUpperCase(),
+      company: user.company 
+    }).select('name email phone');
+
+    res.json({ success: true, users });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Update site
-siteRouter.put('/:id', requireAuth, requireRole(['OWNER']), async (req, res) => {
-  const site = await Site.findOneAndUpdate({ _id: req.params.id, owner: req.auth!.userId }, req.body, { new: true });
-  if (!site) return res.status(404).json({ error: 'Not found' });
-  res.json(site);
-});
-
-// Delete site
-siteRouter.delete('/:id', requireAuth, requireRole(['OWNER']), async (req, res) => {
-  const result = await Site.findOneAndDelete({ _id: req.params.id, owner: req.auth!.userId });
-  if (!result) return res.status(404).json({ error: 'Not found' });
-  res.json({ ok: true });
-});
-
-// Assign contractors/suppliers
-siteRouter.post('/:id/assign', requireAuth, requireRole(['OWNER']), async (req, res) => {
-  const { contractors, suppliers } = req.body as { contractors?: string[]; suppliers?: string[] };
-  const site = await Site.findOneAndUpdate(
-    { _id: req.params.id, owner: req.auth!.userId },
-    {
-      ...(contractors ? { contractors } : {}),
-      ...(suppliers ? { suppliers } : {})
-    },
-    { new: true }
-  );
-  if (!site) return res.status(404).json({ error: 'Not found' });
-  res.json(site);
-});
-
-// Update progress and status (Contractor)
-siteRouter.post('/:id/progress', requireAuth, requireRole(['CONTRACTOR']), async (req, res) => {
-  const { progressPercent, status } = req.body as { progressPercent?: number; status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' };
-  const site = await Site.findOne({ _id: req.params.id, contractors: req.auth!.userId });
-  if (!site) return res.status(404).json({ error: 'Not found' });
-  if (typeof progressPercent === 'number') site.progressPercent = Math.max(0, Math.min(100, progressPercent));
-  if (status) site.status = status;
-  await site.save();
-  await Transaction.create({ site: site._id, type: 'STATUS_UPDATE', actor: req.auth!.userId, details: { progressPercent: site.progressPercent, status: site.status } });
-  res.json(site);
-});
-
-
+export { sitesRouter };
