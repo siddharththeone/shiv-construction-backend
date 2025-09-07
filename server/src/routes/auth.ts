@@ -19,8 +19,8 @@ authRouter.post('/signup', async (req, res) => {
       role: UserRole;
     };
 
-    if (!name || !role) return res.status(400).json({ error: 'Missing fields' });
-    const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
+    if (!name || !role || !password) return res.status(400).json({ error: 'Missing required fields: name, role, and password' });
+    const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, phone, passwordHash, role });
     const token = signToken(user._id as any, user.role);
     res.json({ success: true, token, user: serializeUser(user) });
@@ -112,6 +112,19 @@ authRouter.post('/invite', requireAuth, async (req, res) => {
     if (!['CONTRACTOR', 'SUPPLIER'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
     const invited = await User.create({ name, email, phone, role, invitedBy: inviterId });
     res.json({ user: serializeUser(invited) });
+  } catch (e: any) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Test endpoint to create a user with known credentials
+authRouter.post('/test-user', async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, passwordHash, role: role || 'CONTRACTOR' });
+    const token = signToken(user._id as any, user.role);
+    res.json({ success: true, token, user: serializeUser(user) });
   } catch (e: any) {
     res.status(400).json({ error: e.message });
   }
