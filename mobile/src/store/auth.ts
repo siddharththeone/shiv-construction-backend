@@ -14,7 +14,7 @@ type AuthState = {
   registerFcm: (token: string) => Promise<void>;
 };
 
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'http://10.0.2.2:4000/api';
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://shiv-construction-backend-production.up.railway.app/api';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -27,9 +27,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async ({ email, phone, password }) => {
     const res = await axios.post(`${API_BASE}/auth/login`, { email, phone, password });
     const { token, user } = res.data;
+    if (!token || !user) {
+      throw new Error('Invalid response from server');
+    }
     axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-    await SecureStore.setItemAsync('token', token);
-    await SecureStore.setItemAsync('user', JSON.stringify(user));
+    try {
+      await SecureStore.setItemAsync('token', token);
+      await SecureStore.setItemAsync('user', JSON.stringify(user));
+    } catch (e) {
+      // Fallback for web - use localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+    }
     set({ token, user });
   },
   logout: async () => {

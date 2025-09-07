@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test User</title>
+</head>
+<body>
+    <h1>Create Test User</h1>
+    <button onclick="createTestUser()">Create Test User</button>
+    <div id="result"></div>
+
+    <script>
+        async function createTestUser() {
+            try {
+                const response = await fetch('https://shiv-construction-backend-production.up.railway.app/api/auth/test-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: 'test@example.com',
+                        password: 'password123',
+                        role: 'CONTRACTOR'
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
