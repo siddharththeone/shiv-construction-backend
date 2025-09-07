@@ -1,12 +1,32 @@
+# Ignore Android app files
 app/
-mobile/
-.gradle/
-.idea/
+android/
+ios/
+*.apk
+*.aab
+
+# Ignore development files
+node_modules/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore build artifacts
+dist/
 build/
-gradle/
-*.gradle
-*.gradle.kts
-gradlew
-gradlew.bat
-local.properties
-settings.gradle.kts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

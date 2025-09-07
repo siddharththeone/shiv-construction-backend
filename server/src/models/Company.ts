@@ -31,3 +31,5 @@ const CompanySchema = new Schema<ICompany>(
 CompanySchema.index({ owner: 1 }, { unique: true });
 
 export const Company: Model<ICompany> = mongoose.model<ICompany>('Company', CompanySchema);
+
+

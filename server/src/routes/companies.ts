@@ -97,3 +97,5 @@ companyRouter.get('/users', requireAuth, requireRole(['OWNER']), async (req, res
     res.status(500).json({ error: error.message });
   }
 });
+
+
