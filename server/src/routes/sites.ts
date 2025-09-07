@@ -61,8 +61,8 @@ sitesRouter.get('/:id', requireAuth, async (req, res) => {
 
     // Check if user has access to this site
     const hasAccess = user.role === 'OWNER' && site.company.toString() === user.company?.toString() ||
-                     user.role === 'CONTRACTOR' && site.contractors.some(c => c._id.toString() === user._id.toString()) ||
-                     user.role === 'SUPPLIER' && site.suppliers.some(s => s._id.toString() === user._id.toString());
+                     user.role === 'CONTRACTOR' && site.contractors.some(c => c._id.toString() === (user._id as any).toString()) ||
+                     user.role === 'SUPPLIER' && site.suppliers.some(s => s._id.toString() === (user._id as any).toString());
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -143,7 +143,7 @@ sitesRouter.put('/:id', requireAuth, async (req, res) => {
 
     // Check access
     const isOwner = user.role === 'OWNER' && site.company.toString() === user.company?.toString();
-    const isContractor = user.role === 'CONTRACTOR' && site.contractors.some(c => c._id.toString() === user._id.toString());
+    const isContractor = user.role === 'CONTRACTOR' && site.contractors.some(c => c._id.toString() === (user._id as any).toString());
 
     if (!isOwner && !isContractor) {
       return res.status(403).json({ error: 'Access denied' });
